@@ -29,7 +29,7 @@ class DisplayUtil {
     fun getCurrentDisplaySize(): Point {
         return try {
             val localPoint = Point()
-            iWindowManager?.getInitialDisplaySize(0, localPoint)
+            iWindowManager?.getBaseDisplaySize(0, localPoint)
 //            println(">>> Dimension: $localPoint")
             localPoint
         } catch (e: Exception) {
