@@ -14,6 +14,12 @@ import java.nio.ByteBuffer
 class AnyRequestCallback : HttpServerRequestCallback {
     private var displayUtil: DisplayUtil? = DisplayUtil()
 
+    private data class ScreenshotResult(
+        val bytes: ByteArray,
+        val width: Int,
+        val height: Int
+    )
+
     override fun onRequest(
         request: AsyncHttpServerRequest?,
         response: AsyncHttpServerResponse?
@@ -39,9 +45,11 @@ class AnyRequestCallback : HttpServerRequestCallback {
             val destWidth: Int = Main.getWidth()
             val destHeight: Int = Main.getHeight()
 
-            val bytes: ByteArray = getScreenImageInBytes(destWidth, destHeight)
+            val screenshot: ScreenshotResult = getScreenImageInBytes(destWidth, destHeight)
 
-            response?.send("application/octet-stream", bytes)
+            response?.headers?.add("X-Screenshot-Width", screenshot.width.toString())
+            response?.headers?.add("X-Screenshot-Height", screenshot.height.toString())
+            response?.send("application/octet-stream", screenshot.bytes)
         } catch (e: Exception) {
             e.printStackTrace()
             response?.code(500)
@@ -57,7 +65,7 @@ class AnyRequestCallback : HttpServerRequestCallback {
     private fun getScreenImageInBytes(
         width: Int,
         height: Int
-    ): ByteArray {
+    ): ScreenshotResult {
         var destWidth = width
         var destHeight = height
 
@@ -75,6 +83,6 @@ class AnyRequestCallback : HttpServerRequestCallback {
         bitmap!!.copy(Bitmap.Config.RGB_565, false)?.copyPixelsToBuffer(buffer)
         bitmap.recycle()
 
-        return buffer.array()
+        return ScreenshotResult(buffer.array(), destWidth, destHeight)
     }
 }
