@@ -40,9 +40,7 @@ class AnyRequestCallback : HttpServerRequestCallback {
 
             if (!width.isNullOrEmpty() && !height.isNullOrEmpty() && width.isDigitsOnly() && height.isDigitsOnly()) {
                 Main.setWH(width.toInt(), height.toInt())
-            }
-
-            if (Main.getWidth() == 0 || Main.getHeight() == 0) {
+            } else {
                 val point: Point? = displayUtil?.getCurrentDisplaySize()
                 if (point != null && point.x > 0 && point.y > 0) {
                     Main.setWH(point.x, point.y)
@@ -78,15 +76,8 @@ class AnyRequestCallback : HttpServerRequestCallback {
         height: Int,
         format: String
     ): ScreenshotResult {
-        var destWidth = width
-        var destHeight = height
-
-        val screenRotation: Int? = displayUtil?.getScreenRotation()
-        if (screenRotation != null && screenRotation != 0 && screenRotation != 2) { // not portrait
-            val tmp = destWidth
-            destWidth = destHeight
-            destHeight = tmp
-        }
+        val destWidth = width
+        val destHeight = height
 
         val bitmap: Bitmap? = ScreenCaptorUtils.screenshot(destWidth, destHeight)
         Log.i("DroidCast_raw_log", "Bitmap generated with resolution $destWidth:$destHeight")

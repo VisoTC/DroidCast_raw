@@ -30,8 +30,13 @@ class DisplayUtil {
         return try {
             val localPoint = Point()
             iWindowManager?.getBaseDisplaySize(0, localPoint)
-//            println(">>> Dimension: $localPoint")
-            localPoint
+            val rotation = getScreenRotation()
+            // rotation 1 (90°) and 3 (270°) are landscape — swap width and height
+            if (rotation == 1 || rotation == 3) {
+                Point(localPoint.y, localPoint.x)
+            } else {
+                localPoint
+            }
         } catch (e: Exception) {
             e.printStackTrace()
             Point()
