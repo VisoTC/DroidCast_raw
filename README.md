@@ -1,10 +1,8 @@
 # DroidCast_raw
 
-本项目修改自 [DroidCast](https://github.com/rayworks/DroidCast) ，是为 [AzurLaneAutoScript](https://github.com/LmeSzinc/AzurLaneAutoScript) 提供的一个能够在 Android 设备上面截取屏幕并**返回 Bitmap** 的工具。
+本项目修改自 [DroidCast](https://github.com/Torther/DroidCast_raw) ，是为 [MaaAssistantArknights](https://github.com/MaaAssistantArknights/MaaAssistantArknights) 提供的一个能够在 Android 设备上面截取屏幕并**返回 Bitmap** 的工具。
 
 ⚠️ 代码中通过反射调用了一些系统隐藏的方法，相关功能可能会随着 Android 系统接口的变化而受到影响。
-
-当前该工具支持从SDK 23(Android 6.0) 至 SDK34(Android 14)的屏幕截图获取。
 
 ## 依赖
 
@@ -91,7 +89,7 @@ adb push DroidCast_raw-release-1.0.apk /data/local/tmp
  - 通过 app_process 启动内部的图片处理服务进程
 
 ```shell
-adb shell CLASSPATH=/data/local/tmp/DroidCast_raw-release-1.0.apk app_process / ink.mol.droidcast_raw.Main (--port=8080)
+adb shell CLASSPATH=/data/local/tmp/DroidCast_raw-release-1.2.apk app_process / ink.mol.droidcast_raw.Main (--port=8080)
 ```
 > 注： 在某些设备上, 如果碰到类似 ```appproc: ERROR: could not find class 'ink.mol.droidcast_raw.Main'``` 的错误，请改用方法一。
 
@@ -105,8 +103,19 @@ adb forward tcp:53516 tcp:53516
 
 ## 数据返回
 ```shell
-GET http://ip:port/screenshot(?width=xxx&height=xxx)
-返回 BitmapByteArray(RGB_565) ContentType="application/octet-stream"
+GET http://ip:port/screenshot(?width=xxx&height=xxx&format=rgb565|rgb8888)
+返回 BitmapByteArray ContentType="application/octet-stream"
+
+format 默认 rgb565
+
+format=rgb565  返回 RGB_565 BitmapByteArray，每像素 2 字节
+format=rgb8888 返回 ARGB_8888 BitmapByteArray，每像素 4 字节
+
+响应头:
+X-Screenshot-Width
+X-Screenshot-Height
+X-Screenshot-Format
+X-Screenshot-Bytes-Per-Pixel
 ```
 
 ```shell
@@ -133,7 +142,9 @@ GET http://ip:port/preview(?width=xxx&height=xxx)
 ## License
 
 ```
+Copyright (C) 2026 VisoTC
 Copyright (C) 2023 Torther
+Copyright (C) 2018 rayworks
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
