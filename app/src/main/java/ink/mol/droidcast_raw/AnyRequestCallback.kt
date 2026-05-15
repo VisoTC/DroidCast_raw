@@ -17,7 +17,9 @@ class AnyRequestCallback : HttpServerRequestCallback {
     private data class ScreenshotResult(
         val bytes: ByteArray,
         val width: Int,
-        val height: Int
+        val height: Int,
+        val format: String,
+        val bytesPerPixel: Int
     )
 
     override fun onRequest(
@@ -28,6 +30,13 @@ class AnyRequestCallback : HttpServerRequestCallback {
             val pairs: Multimap? = request?.query
             val width: String? = pairs?.getString("width")
             val height: String? = pairs?.getString("height")
+            val format: String = pairs?.getString("format")?.lowercase() ?: "rgb565"
+
+            if (format != "rgb565" && format != "rgb8888") {
+                response?.code(400)
+                response?.send("Unsupported screenshot format: $format. Supported formats: rgb565, rgb8888")
+                return
+            }
 
             if (!width.isNullOrEmpty() && !height.isNullOrEmpty() && width.isDigitsOnly() && height.isDigitsOnly()) {
                 Main.setWH(width.toInt(), height.toInt())
@@ -45,10 +54,12 @@ class AnyRequestCallback : HttpServerRequestCallback {
             val destWidth: Int = Main.getWidth()
             val destHeight: Int = Main.getHeight()
 
-            val screenshot: ScreenshotResult = getScreenImageInBytes(destWidth, destHeight)
+            val screenshot: ScreenshotResult = getScreenImageInBytes(destWidth, destHeight, format)
 
             response?.headers?.add("X-Screenshot-Width", screenshot.width.toString())
             response?.headers?.add("X-Screenshot-Height", screenshot.height.toString())
+            response?.headers?.add("X-Screenshot-Format", screenshot.format)
+            response?.headers?.add("X-Screenshot-Bytes-Per-Pixel", screenshot.bytesPerPixel.toString())
             response?.send("application/octet-stream", screenshot.bytes)
         } catch (e: Exception) {
             e.printStackTrace()
@@ -64,7 +75,8 @@ class AnyRequestCallback : HttpServerRequestCallback {
 
     private fun getScreenImageInBytes(
         width: Int,
-        height: Int
+        height: Int,
+        format: String
     ): ScreenshotResult {
         var destWidth = width
         var destHeight = height
@@ -79,10 +91,24 @@ class AnyRequestCallback : HttpServerRequestCallback {
         val bitmap: Bitmap? = ScreenCaptorUtils.screenshot(destWidth, destHeight)
         Log.i("DroidCast_raw_log", "Bitmap generated with resolution $destWidth:$destHeight")
 
-        val buffer = ByteBuffer.allocate((destWidth.times(destHeight)) * 2)
-        bitmap!!.copy(Bitmap.Config.RGB_565, false)?.copyPixelsToBuffer(buffer)
+        val bitmapConfig = when (format) {
+            "rgb8888" -> Bitmap.Config.ARGB_8888
+            else -> Bitmap.Config.RGB_565
+        }
+        val responseFormat = when (format) {
+            "rgb8888" -> "ARGB_8888"
+            else -> "RGB_565"
+        }
+        val bytesPerPixel = when (format) {
+            "rgb8888" -> 4
+            else -> 2
+        }
+        val buffer = ByteBuffer.allocate(destWidth * destHeight * bytesPerPixel)
+        val convertedBitmap = bitmap!!.copy(bitmapConfig, false)!!
+        convertedBitmap.copyPixelsToBuffer(buffer)
+        convertedBitmap.recycle()
         bitmap.recycle()
 
-        return ScreenshotResult(buffer.array(), destWidth, destHeight)
+        return ScreenshotResult(buffer.array(), destWidth, destHeight, responseFormat, bytesPerPixel)
     }
 }
